@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+requests
+sentence-transformers
+chromadb
+openai
+rapidfuzz
