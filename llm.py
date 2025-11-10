@@ -98,7 +98,7 @@ def generate_answer(question, context_messages):
 
     # Build user message
     user_prompt = (
-        f"Here are the context messages (oldest → newest):\n\n"
+        f"Here are the context messages (newest → oldest):\n\n"
         f"{context_text}\n\n"
         f"User Question:\n{question}\n\n"
         f"Now answer strictly following the hierarchy above.\n"
