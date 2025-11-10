@@ -10,7 +10,7 @@ import unicodedata
 # ──────────────────────────────
 # Initialize components
 # ──────────────────────────────
-model = SentenceTransformer("all-MiniLM-L6-v2")
+model = SentenceTransformer("all-MiniLM-L12-v2")
 
 # create persistent Chroma DB folder (so it’s saved between runs)
 CHROMA_PATH = "chroma_store"
