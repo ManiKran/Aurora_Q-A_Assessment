@@ -120,7 +120,7 @@ def detect_user_name(question, all_user_names):
 # ──────────────────────────────
 # Retrieval Logic
 # ──────────────────────────────
-def retrieve_relevant_messages(question, top_k=10, user_name=None):
+def retrieve_relevant_messages(question, top_k=5, user_name=None):
     """
     High-accuracy semantic retrieval pipeline.
       1️⃣ Restrict search to user (with fallback to global).
@@ -199,7 +199,7 @@ def retrieve_relevant_messages(question, top_k=10, user_name=None):
         unique = [u for u in unique if u["user_name"] == user_name]
 
     # 8️⃣ Return top results
-    final = unique[:20]
+    final = unique[:10]
 
     print(f"📑 Retrieved {len(final)} contextual messages for {user_name or 'unknown user'} (newest first).")
     for msg in final[:5]:

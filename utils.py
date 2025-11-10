@@ -9,78 +9,49 @@ CACHE_FILE = "data_cache.pkl"
 CACHE_MAX_AGE_HOURS = 12  # auto-refresh cache after this many hours
 
 
-def fetch_messages_from_api(limit_per_page: int = 100, max_pages: int = None):
+def fetch_messages_from_api(limit_total: int = 3349):
     """
-    Fetch messages from the public API using pagination.
-    Each page returns up to `limit_per_page` items.
-    
-    Args:
-        limit_per_page: Number of items to fetch per request (default 100).
-                        Can be increased (e.g., 200 or 300) but use caution with memory.
-        max_pages: Optional limit on how many pages to fetch total.
-                   Useful for testing (e.g., max_pages=5).
+    Fetch all messages in a single API request.
+    Attempts to pull all messages by setting limit=3349.
+    Falls back gracefully if the API enforces smaller limits.
     """
-    print(f"📡 Fetching messages from API in pages of {limit_per_page}...")
+    print(f"📡 Fetching all messages from API with limit={limit_total} (single request)...")
 
-    all_items = []
-    skip = 0
-    page = 0
+    url = f"{API_URL}/?skip=0&limit={limit_total}"
+    headers = {"accept": "application/json"}
+    response = requests.get(url, headers=headers)
 
-    while True:
-        url = f"{API_URL}/?skip={skip}&limit={limit_per_page}"
-        headers = {"accept": "application/json"}
+    if response.status_code in (404, 405):
+        print("⚠️ Pagination not supported — retrying base endpoint without params.")
+        response = requests.get(API_URL, headers=headers)
 
-        response = requests.get(url, headers=headers)
-        if response.status_code == 403:
-            print("⚠️ Hit API permission limit — stopping early.")
-            break
+    if response.status_code == 402:
+        raise RuntimeError("💰 API quota reached (HTTP 402 Payment Required).")
 
-        response.raise_for_status()
-        data = response.json()
-        items = data.get("items", [])
+    response.raise_for_status()
+    data = response.json()
+    items = data.get("items", data)
 
-        if not items:
-            break
+    # Normalize message text and user names
+    for item in items:
+        item["message"] = (item.get("message") or "").strip()
+        item["user_name"] = (item.get("user_name") or "").strip()
 
-        # Normalize and clean message fields
-        for item in items:
-            item["message"] = (item.get("message") or "").strip()
-            item["user_name"] = (item.get("user_name") or "").strip()
-
-        all_items.extend(items)
-        print(f"📦 Page {page + 1}: fetched {len(items)} items (total {len(all_items)})")
-
-        if len(items) < limit_per_page:
-            break
-
-        page += 1
-        skip += limit_per_page
-        if max_pages and page >= max_pages:
-            print(f"🛑 Stopping after {page} pages as per max_pages={max_pages}.")
-            break
-
-    print(f"✅ Done! Total messages fetched: {len(all_items)}")
-    return all_items
+    print(f"✅ Done! Total messages fetched: {len(items)}")
+    return items
 
 
 def is_cache_fresh() -> bool:
-    """
-    Returns True if the cache exists and is newer than CACHE_MAX_AGE_HOURS.
-    """
+    """Returns True if cache exists and is newer than CACHE_MAX_AGE_HOURS."""
     if not os.path.exists(CACHE_FILE):
         return False
     file_age = datetime.now() - datetime.fromtimestamp(os.path.getmtime(CACHE_FILE))
     return file_age < timedelta(hours=CACHE_MAX_AGE_HOURS)
 
 
-def load_messages(force_refresh: bool = False, limit_per_page: int = 100, max_pages: int = None):
+def load_messages(force_refresh: bool = False, limit_per_page: int = 3349):
     """
     Load messages from cache (if fresh) or fetch from API.
-    
-    Args:
-        force_refresh: Whether to skip cache and fetch new data.
-        limit_per_page: Number of items per API request.
-        max_pages: Optional limit for debugging or memory control.
     """
     if not force_refresh and is_cache_fresh():
         try:
@@ -91,8 +62,12 @@ def load_messages(force_refresh: bool = False, limit_per_page: int = 100, max_pa
         except Exception as e:
             print(f"⚠️ Cache read error ({e}) — refetching...")
 
-    messages = fetch_messages_from_api(limit_per_page=limit_per_page, max_pages=max_pages)
+    # 🚀 Fetch all messages (no artificial cap)
+    messages = fetch_messages_from_api(limit_total=limit_per_page)
+
+    # Save to cache
     with open(CACHE_FILE, "wb") as f:
         pickle.dump(messages, f)
     print(f"💾 Cached {len(messages)} messages to {CACHE_FILE}.")
+
     return messages
