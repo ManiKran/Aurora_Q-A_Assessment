@@ -4,6 +4,7 @@ from utils import load_messages
 from retriever import build_index, detect_user_name, retrieve_relevant_messages
 from llm import generate_answer
 from typing import Optional
+import os
 
 app = FastAPI(
     title="Member Question Answering API",
@@ -26,7 +27,8 @@ def startup_event():
     print("🚀 Loading messages...")
     messages = load_messages()  # from cache if exists
     user_names = list({m["user_name"] for m in messages})
-    build_index(messages)
+    if not os.path.exists("chroma_store"):
+        build_index(messages)
     print("✅ Ready! API is live.")
 
 
