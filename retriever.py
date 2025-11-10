@@ -120,7 +120,7 @@ def detect_user_name(question, all_user_names):
 # ──────────────────────────────
 # Retrieval Logic
 # ──────────────────────────────
-def retrieve_relevant_messages(question, top_k=20, user_name=None):
+def retrieve_relevant_messages(question, top_k=10, user_name=None):
     """
     High-accuracy semantic retrieval pipeline.
       1️⃣ Restrict search to user (with fallback to global).
