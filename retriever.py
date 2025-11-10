@@ -99,21 +99,39 @@ def build_index(messages, batch_size=150):
 # User Detection
 # ──────────────────────────────
 def detect_user_name(question, all_user_names):
-    """Detect which member name is referenced in the question."""
+    """
+    Detect which member name is referenced in the question.
+    Hybrid approach:
+      1️⃣ Literal substring check (most reliable)
+      2️⃣ Fuzzy fallback (for partial or misspelled matches)
+    """
     norm_q = normalize_text(question)
     best_match, best_score = None, 0
 
+    # 1️⃣ Literal check first
+    for u in all_user_names:
+        if u.lower() in question.lower():
+            print(f"🧭 Detected user literally: {u}")
+            return u
+
+        # check for partial match like "thiago" in "thiago's"
+        u_parts = normalize_text(u).split()
+        for part in u_parts:
+            if re.search(rf"\b{part}\b", norm_q):
+                print(f"🧭 Detected user (partial literal): {u}")
+                return u
+
+    # 2️⃣ Fuzzy fallback (only if literal match fails)
     for u in all_user_names:
         u_norm = normalize_text(u)
-        parts = [u_norm] + u_norm.split()
-        for part in parts:
-            score = fuzz.partial_ratio(part, norm_q)
-            if score > best_score:
-                best_score, best_match = score, u
+        score = fuzz.partial_ratio(u_norm, norm_q)
+        if score > best_score:
+            best_score, best_match = score, u
 
-    if best_score >= 55:
-        print(f"🧭 Detected user: {best_match} (score {best_score})")
+    if best_score >= 70:
+        print(f"🧭 Fuzzy-detected user: {best_match} (score {best_score})")
         return best_match
+
     print("⚠️ No user detected.")
     return None
 

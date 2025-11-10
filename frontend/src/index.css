@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-gradient-to-br from-black via-amber-950 to-[#ffb347] text-white overflow-hidden;
+  font-family: 'Inter', sans-serif;
+}
