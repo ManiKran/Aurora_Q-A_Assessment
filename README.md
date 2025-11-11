@@ -100,6 +100,8 @@ The final **Aurora Member Q&A System**:
 - Deploys seamlessly on **Railway**, supporting scalable API queries.  
 - Maintains **explainability** through transparent logs and contextual reasoning.  
 
+## App Link: 
+https://aurora-assessment-saimanikiran.up.railway.app/
 ---
 
 ## Output Examples:
