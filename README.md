@@ -100,6 +100,7 @@ The final **Aurora Member Q&A System**:
 - Deploys seamlessly on **Railway**, supporting scalable API queries.  
 - Maintains **explainability** through transparent logs and contextual reasoning.  
 
+---
 
 ## Output Examples:
 
@@ -125,7 +126,7 @@ Answer: I don’t have the exact information for this, but based on the availabl
 
 5. Question: How many cars does Thiago has?
 ```bash
-Anaswer: Idon’t have any information about the question you asked.
+Answer: Idon’t have any information about the question you asked.
 ```
 ---
 
