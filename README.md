@@ -74,25 +74,11 @@ This approach prevents hallucinations and maintains concise, trustworthy respons
 
 | Component | Alternative | Problem Encountered | Final Decision |
 |------------|-------------|--------------------|----------------|
-| **Knowledge Base** | SQLite / PostgreSQL full-text search | Poor semantic recall. | ✅ Switched to ChromaDB |
 | **Embedding Model** | `MiniLM-L6-v2` (faster) | Missed nuanced context. | ✅ Chose `all-mpnet-base-v2` |
 | **User Detection** | Pure fuzzy match | Incorrect user attribution. | ✅ Hybrid literal + fuzzy |
 | **Retrieval Scope** | Global retrieval | Pulled irrelevant context. | ✅ User-scoped with fallback |
 | **Generation** | Free-form LLM output | Hallucinated information. | ✅ Controlled rule-based output |
 | **Index Handling** | Rebuild each run | High startup latency. | ✅ Cached persistent Chroma index |
-
----
-
-## 🧩 Problems Faced & Fixes
-
-| Issue | Root Cause | Solution |
-|-------|-------------|----------|
-| ❌ Incorrect user mapping | Fuzzy match confusion between similar names | Combined literal substring + fuzzy threshold |
-| 🕒 Cold-start latency (~30 s) | SentenceTransformer model loading on CPU | Warm-up during FastAPI startup |
-| ⚠️ Duplicate / blank API messages | Data noise from source | Normalized text & filtered whitespace |
-| 🔌 502 Bad Gateway on Railway | Fixed port in frontend | Used `npx serve -s dist -l $PORT` |
-| 🧱 Host blocking on Vite preview | Railway domain not allowed | Added `preview.allowedHosts` in `vite.config.js` |
-| 💬 OpenAI network / quota errors | API interruptions | Implemented exception handling + fallbacks |
 
 ---
 
@@ -117,16 +103,3 @@ The final **Aurora Member Q&A System**:
 > 🧠 *This architecture reflects a deliberate trade-off — prioritizing accuracy, interpretability, and reproducibility over raw speed, resulting in a robust and production-ready RAG system.*
 
 ---
-
-## 🗺️ RAG Architecture Flow
-
-```mermaid
-graph LR
-A[💬 User Question] --> B[🧭 User Detection<br>(Literal + Fuzzy Matching)]
-B --> C[🔍 Semantic Retrieval<br>via ChromaDB]
-C --> D[🧩 Context Augmentation<br>(Timestamped Messages)]
-D --> E[🤖 LLM Generation<br>(GPT-4o-mini)]
-E --> F[✅ Grounded Answer]
-
-style A fill:#f9f9f9,stroke:#aaa,stroke-width:1px;
-style F fill:#e2f7e2,stroke:#6c6,stroke-width:1px;
