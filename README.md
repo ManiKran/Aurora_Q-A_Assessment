@@ -100,6 +100,61 @@ The final **Aurora Member Q&A System**:
 - Deploys seamlessly on **Railway**, supporting scalable API queries.  
 - Maintains **explainability** through transparent logs and contextual reasoning.  
 
-> 🧠 *This architecture reflects a deliberate trade-off — prioritizing accuracy, interpretability, and reproducibility over raw speed, resulting in a robust and production-ready RAG system.*
+
+## Output Examples:
+
+1. Question: When is Layla planning to go to london
+```bash
+Answer: I don’t have the exact information for this, but based on the available context, Layla has mentioned needing a car service and a chauffeur in London, and she also requires a suite at Claridge's starting Monday. However, the specific date for her trip to London is not explicitly stated.
+```
+
+2. Question: What are Sophia's food preferences recently?
+```bash
+Answer: I don’t have the exact information for this, but based on the available context, Sophia's recent food preferences include a gluten-free menu for her stay in Paris, vegetarian meals at Italian restaurants, and a vegetarian choice at The Ritz. Additionally, she prefers a chef's tasting menu when available and has dietary restrictions regarding shellfish.
+```
+
+3. Question: What layla thinks about her venice trip?
+```bash
+Answer: Lyla thinks her Venice trip was sensational, as she expressed gratitude for the team's efforts regarding that trip.
+```
+
+4. Question: What is Amina's latest concern?
+```bash
+Answer: I don’t have the exact information for this, but based on the available context, Amina's latest concern appears to be regarding the billing statement for her recent yacht trip, as mentioned in her message dated October 10, 2025.
+```
+
+5. Question: How many cars does Thiago has?
+```bash
+Anaswer: Idon’t have any information about the question you asked.
+```
+---
+
+## 📊 Data Quality & Anomaly Analysis
+
+Before building embeddings and running retrieval, I performed a detailed integrity check on the member messages dataset fetched via the public API.
+
+### ✅ Summary of Data Validation
+
+| Check | Description | Result |
+|--------|--------------|---------|
+| **Total Messages** | Total records analyzed from cache/API | **3349** |
+| **Missing Values** | Checked across all columns (`id`, `user_id`, `user_name`, `timestamp`, `message`) | **None found** |
+| **Empty / Whitespace Messages** | Messages with blank or whitespace-only text | **0** |
+| **Duplicate IDs** | Duplicate unique identifiers | **0** |
+| **Duplicate Message Texts** | Repeated message content across users | **0** |
+| **User Inconsistencies** | Members with multiple or conflicting name entries | **0** |
+| **Invalid Timestamps** | Non-parsable or malformed timestamps | **0** |
+| **Future Timestamps** | Entries incorrectly dated after current UTC time | **0** |
+| **Extremely Long Messages** | > 1000 characters | **0** |
+| **Extremely Short Messages** | < 3 characters | **0** |
 
 ---
+
+### 🧩 Observations
+
+- The dataset is **clean and consistent**, with **no structural or semantic anomalies** detected.  
+- User identifiers, names, and timestamps are all valid and synchronized.  
+- No duplicate or missing records were found across the 3,349 entries.  
+- This high data integrity ensures **accurate embeddings** and **reliable retrieval performance** in the RAG pipeline.  
+
+> 🧠 *Conclusion:* The message dataset required **no corrective preprocessing** — its cleanliness allowed me to directly build embeddings using `sentence-transformers/all-mpnet-base-v2` and focus optimization efforts on retrieval and LLM reasoning instead.
