@@ -1,3 +1,12 @@
+## App Link: 
+[https://aurora-assessment-saimanikiran.up.railway.app/](https://aurora-assessment-saimanikiran.up.railway.app/)
+
+---
+## Demo Video:
+[https://aurora-assessment-saimanikiran.up.railway.app/](https://drive.google.com/file/d/18pY0JeZkQ5ixdeW_oK7TicKpyfzMLCKi/view?usp=drive_link)
+
+---
+
 # 🧠 Aurora Member Q&A — RAG Architecture & Design Overview
 
 While developing the **Aurora Member Q&A System**, I designed a modular pipeline based on a **Retrieval-Augmented Generation (RAG)** architecture.  
@@ -100,9 +109,6 @@ The final **Aurora Member Q&A System**:
 - Deploys seamlessly on **Railway**, supporting scalable API queries.  
 - Maintains **explainability** through transparent logs and contextual reasoning.  
 
-## App Link: 
-https://aurora-assessment-saimanikiran.up.railway.app/
----
 
 ## Output Examples:
 
