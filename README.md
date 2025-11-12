@@ -3,7 +3,7 @@
 
 ---
 ## Demo Video:
-[https://aurora-assessment-saimanikiran.up.railway.app/](https://drive.google.com/file/d/18pY0JeZkQ5ixdeW_oK7TicKpyfzMLCKi/view?usp=drive_link)
+https://drive.google.com/file/d/18pY0JeZkQ5ixdeW_oK7TicKpyfzMLCKi/view?usp=drive_link
 
 ---
 
