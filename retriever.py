@@ -8,6 +8,7 @@ from dateutil import parser as date_parser
 from sentence_transformers import SentenceTransformer
 import chromadb
 from rapidfuzz import fuzz
+import time
 
 # ──────────────────────────────
 # Configuration
@@ -140,86 +141,126 @@ def detect_user_name(question, all_user_names):
 # ──────────────────────────────
 def retrieve_relevant_messages(question, top_k=5, user_name=None):
     """
-    High-accuracy semantic retrieval pipeline.
-      1️⃣ Restrict search to user (with fallback to global).
-      2️⃣ Retrieve top semantically similar messages.
+    High-accuracy semantic retrieval pipeline (with detailed timing).
+      1️⃣ Encode the query.
+      2️⃣ Restrict search to user (with fallback to global).
       3️⃣ Expand via centroid similarity for context.
       4️⃣ Rank by recency + relevance.
-      5️⃣ Sort newest-first for context clarity.
+      5️⃣ Sort newest-first for clarity.
     """
+
+    print(f"\n🔍 Starting retrieval for question: '{question}'")
+    start_total = time.perf_counter()
+
+    # 1️⃣ Encode question
+    t0 = time.perf_counter()
     q_text = f"{user_name}: {question}" if user_name else question
     q_emb = model.encode(q_text, normalize_embeddings=True).tolist()
+    t1 = time.perf_counter()
+    print(f"⏱️ [Step 1] Query embedding took {t1 - t0:.3f}s")
 
-    # 1️⃣ Primary search — only within detected user's messages
+    # 2️⃣ Primary search — within detected user's messages
     if user_name:
         print(f"🎯 Searching within {user_name}'s messages…")
         query = {
             "query_embeddings": [q_emb],
             "n_results": top_k * 3,
-            "where": {"user_name": user_name}
+            "where": {"user_name": user_name},
         }
+        t2 = time.perf_counter()
         results = collection.query(**query)
+        t3 = time.perf_counter()
+        print(f"⏱️ [Step 2] User-specific Chroma query took {t3 - t2:.3f}s")
     else:
+        t2 = time.perf_counter()
         results = collection.query(query_embeddings=[q_emb], n_results=top_k * 3)
+        t3 = time.perf_counter()
+        print(f"⏱️ [Step 2] Global Chroma query took {t3 - t2:.3f}s")
 
-    # 2️⃣ Fallback to global search if none found
+    # 3️⃣ Fallback to global if no user match
     if not results.get("documents"):
         print("⚠️ No user-specific matches — falling back to global search.")
+        t4 = time.perf_counter()
         results = collection.query(query_embeddings=[q_emb], n_results=top_k * 3)
+        t5 = time.perf_counter()
+        print(f"⏱️ [Step 3] Fallback global query took {t5 - t4:.3f}s")
+    else:
+        t5 = t3
 
+    # Extract results
     docs = results["documents"][0]
     metas = results["metadatas"][0]
     scores = results.get("distances", [[]])[0]
+    print(f"📦 Retrieved {len(docs)} initial results.")
 
-    # 3️⃣ Centroid expansion (topical coherence)
+    # 4️⃣ Centroid expansion for topical context
+    t6 = time.perf_counter()
     if len(docs) > 1:
         seed_embs = model.encode(
             docs[: min(len(docs), 12)],
             show_progress_bar=False,
-            normalize_embeddings=True
+            normalize_embeddings=True,
         )
         centroid = np.mean(seed_embs, axis=0).tolist()
         expand_results = collection.query(
             query_embeddings=[centroid],
             n_results=top_k,
-            where={"user_name": user_name} if user_name else None
+            where={"user_name": user_name} if user_name else None,
         )
         docs += expand_results["documents"][0]
         metas += expand_results["metadatas"][0]
         scores += expand_results.get("distances", [[]])[0]
+        t7 = time.perf_counter()
+        print(f"⏱️ [Step 4] Centroid expansion query took {t7 - t6:.3f}s")
+    else:
+        t7 = t6
 
-    # 4️⃣ Combine + score by recency and semantic relevance
+    # 5️⃣ Combine + score
+    t8 = time.perf_counter()
     now = datetime.now(timezone.utc)
     combined = []
     for d, m, s in zip(docs, metas, scores):
         ts = parse_timestamp(m.get("timestamp"))
-        combined.append({
-            "text": d,
-            "user_name": m.get("user_name"),
-            "user_id": m.get("user_id"),
-            "timestamp": ts,
-            "score": s,
-        })
+        combined.append(
+            {
+                "text": d,
+                "user_name": m.get("user_name"),
+                "user_id": m.get("user_id"),
+                "timestamp": ts,
+                "score": s,
+            }
+        )
+    t9 = time.perf_counter()
+    print(f"⏱️ [Step 5] Combine + scoring took {t9 - t8:.3f}s")
 
-    # 5️⃣ Deduplicate by message text
+    # 6️⃣ Deduplicate
+    t10 = time.perf_counter()
     seen = set()
     unique = []
     for c in combined:
         if c["text"] not in seen:
             unique.append(c)
             seen.add(c["text"])
+    t11 = time.perf_counter()
+    print(f"⏱️ [Step 6] Deduplication took {t11 - t10:.3f}s")
 
-    # 6️⃣ Sort newest-first, then by semantic proximity
+    # 7️⃣ Sort newest-first
+    t12 = time.perf_counter()
     unique.sort(key=lambda x: (-x["timestamp"].timestamp(), x["score"]))
+    t13 = time.perf_counter()
+    print(f"⏱️ [Step 7] Sorting took {t13 - t12:.3f}s")
 
-    # 7️⃣ Keep only this user's messages
+    # 8️⃣ Filter user-specific
     if user_name:
         unique = [u for u in unique if u["user_name"] == user_name]
 
-    # 8️⃣ Return top results
     final = unique[:10]
 
-    print(f"📑 Retrieved {len(final)} contextual messages for {user_name or 'unknown user'} (newest first).")
+    # 🕒 Total
+    total = time.perf_counter() - start_total
+    print(f"✅ [Total Retrieval Time] {total:.3f}s for user {user_name or 'unknown'} ({len(final)} messages).")
+
+    # Print sample
     for msg in final[:5]:
         ts = msg["timestamp"].isoformat() if msg["timestamp"] != datetime.min else "N/A"
         print(f"  - [{ts}] {msg['user_name']}: {msg['text'][:90]}")
